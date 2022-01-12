@@ -1,4 +1,3 @@
-
 import serial
 import json
 
@@ -27,16 +26,9 @@ class DopplerSensor:
                 porta.write(b'C?')
                 dados = porta.readline()
                 x = json.loads(dados)
+                return(x["Clock"])
                 print(x["Clock"],"segundos")
-                return(x["Clock"])           
         except serial.SerialException as e:
             print("NÃO FOI POSSIVEL A COMUNICAÇÃO COM O SENSOR, POR FAVOR, VERIFICAR SE  PORTA ESTA CORRETA OU SE ESTA PLUGADO")
             return ("NULL")
 
-
-sensor = DopplerSensor('/dev/ttyACM0',115200)
-
-#sensor.getStatus()
-
-sensor.getTime()
-sensor.getStatus()

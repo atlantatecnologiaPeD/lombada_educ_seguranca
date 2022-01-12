@@ -5,16 +5,16 @@
 #Bibliotecas
 import json
 import time 
+import socket
 import numpy as np
 from numpy.core.numeric import False_, NaN
 from serial_config import*
 from socket_config import*
+from sensor_config import*
 from datetime import datetime
 from threading import Thread
 from binascii import hexlify
 
-#Executando o script de configuração do sensor
-exec(open("sensor_config.py").read())
 
 
 #Chama a funçao send_vel com velocidade = 88km/h para saber quando o programa será iniciado de forma visual
@@ -218,53 +218,56 @@ sensorThread = Thread(target=sensor_data)
 sensorThread.daemon = True
 sensorThread.start()
 
+def main_code():
+    while True:
+        time.sleep(2)
+        #Conexões seriais e suas confogurações 
+        portas_usb_encontradas = get_porta_sensor()  
+        try:
+            ser_sensor = serial.Serial(portas_usb_encontradas[0], 115200, timeout=0)
+        except serial.SerialException as e:
+            portas_usb_encontradas = get_porta_sensor()
+            tipo_erro = 'ERROR'
+            codigo_erro = '5'
+            descricao_erro = e
+            flag_erro = True
+            print('SENSOR DESCONECTADO', e)
+            time.sleep(1)
+            ser_sensor.close()    
 
-while True:
-    time.sleep(2)  
-    try:
-        ser_sensor = serial.Serial(portas_usb_encontradas[0], 115200, timeout=0)
-    except serial.SerialException as e:
-        portas_usb_encontradas = get_porta_sensor()
-        tipo_erro = 'ERROR'
-        codigo_erro = '5'
-        descricao_erro = e
-        flag_erro = True
-        print('SENSOR DESCONECTADO', e)
-        time.sleep(1)
-        ser_sensor.close()    
-
-    try:
-        ser_conversor_display = serial.Serial(portas_usb_encontradas[1], 9600, timeout=0)
-    except serial.SerialException as e:
-        portas_usb_encontradas = get_porta_sensor()
-        tipo_erro = 'ERROR'
-        codigo_erro = '6'
-        descricao_erro = e
-        flag_erro = True
-        print('CONVERSOR DISPLAY DESCONECTADO', e)
-        time.sleep(1)
-        ser_conversor_display.close()   
-        
-    try:
-        # configure socket and connect to server
-        clientSocket = socket.socket()
-        clientSocket.connect((HOST, PORT))
-        # keep track of connection status
-        connected = True
-        #####print("Conectado ao servidor")
-    except socket.error as e:
-        print('Erro de conexão socket tipo: ', e)
-        connected = False
-        clientSocket = socket.socket()
-        print("Conexão perdida...tentando reconectar")
-        pass        
-        while not connected:
-            # attempt to reconnect, otherwise sleep for 2 seconds
-            try:
-                clientSocket.connect((HOST, PORT))
-                connected = True
-                print("Reconexão estabelecida com sucesso")
-            except socket.error as e:
-                print('Erro de conexão socket tipo: ', e)
-                time.sleep(1)
+        try:
+            ser_conversor_display = serial.Serial(portas_usb_encontradas[1], 9600, timeout=0)
+        except serial.SerialException as e:
+            portas_usb_encontradas = get_porta_sensor()
+            tipo_erro = 'ERROR'
+            codigo_erro = '6'
+            descricao_erro = e
+            flag_erro = True
+            print('CONVERSOR DISPLAY DESCONECTADO', e)
+            time.sleep(1)
+            ser_conversor_display.close()   
+            
+        try:
+            # configure socket and connect to server
+            clientSocket = socket.socket()
+            ####print("Aguardando conexão com servidor socket")
+            clientSocket.connect((HOST, PORT))
+            # keep track of connection status
+            connected = True
+            ####print("Conectado ao servidor socket")
+        except:
+            print('Erro de conexão socket tipo: ')
+            connected = False
+            clientSocket = socket.socket()
+            print("Conexão perdida...tentando reconectar")
+            pass        
+            while not connected:
+                # attempt to reconnect, otherwise sleep for 2 seconds
+                try:
+                    clientSocket.connect((HOST, PORT))
+                    connected = True
+                    print("Reconexão estabelecida com sucesso")
+                except socket.error as e:
+                    print('Erro de conexão socket tipo: ', e)
+                    time.sleep(1)
 

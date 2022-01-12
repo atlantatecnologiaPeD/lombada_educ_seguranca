@@ -151,7 +151,6 @@ while not flag_configuracao_ok:
     elif cont_estado == 12:
         try:
             dicionario_json = envia_comando_sensor(b'R+')
-            print(dicionario_json)
             if dicionario_json['RequiredDirection'] == 'Towards Only':
                 print('captura de objetos apenas na aproximação configurada com sucesso')
                 cont_estado+=1
@@ -176,7 +175,7 @@ while not flag_configuracao_ok:
             sensor_data = ser_sensor.readline().decode("utf-8")
             dicionario_json = json.loads(sensor_data)
             if dicionario_json['INFO'] == 'Saving current values to Persistent Settings':
-                print('Sensor totalmente configurado com sucesso')
+                print('Sensor configurado com sucesso')
                 cont_estado = 0
                 flag_configuracao_ok = True
         except KeyError as e:
@@ -184,3 +183,6 @@ while not flag_configuracao_ok:
         except json.JSONDecodeError as e:
             print("ERRO JSON DO TIPO: ", e)
         
+
+
+

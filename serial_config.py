@@ -27,16 +27,26 @@ def get_porta_sensor():
 #Conexões seriais e suas confogurações 
 portas_usb_encontradas = get_porta_sensor()
 
+
+
 if portas_usb_encontradas[0] == 'None':
     print('Sensor não encontrado')
+else:
+    print('O sensor foi encontrado na porta: ', portas_usb_encontradas[0])
+
 if portas_usb_encontradas[1] == 'None':
     print('Conversor USB/Serial não encontrado')
+else:
+    print('O conversor USB/Serial foi encontrado na porta: ', portas_usb_encontradas[1])
 
-ser_sensor = serial.Serial(portas_usb_encontradas[0], 115200, timeout=0)
-ser_sensor.reset_input_buffer()
+try:
+    ser_sensor = serial.Serial(portas_usb_encontradas[0], 115200, timeout=0)
+    ser_sensor.reset_input_buffer()
 
-ser_conversor_display = serial.Serial(portas_usb_encontradas[1], 9600, timeout=0)
-ser_conversor_display.reset_input_buffer()
+    ser_conversor_display = serial.Serial(portas_usb_encontradas[1], 9600, timeout=0)
+    ser_conversor_display.reset_input_buffer()
+except Exception as e:
+    print('Erro do tipo: ', e)
 
 #Função de envio de dados para display de velocidade
 def send_vel(vel, crc16_alta, crc16_baixa):
@@ -53,3 +63,4 @@ def display_protocolo(velocidade_sensor):
     msb_CRC_hex = int.from_bytes(msb_CRC, 'big', signed=False)
     lsb_CRC_hex= int.from_bytes(lsb_CRC, 'big', signed=False) 
     return msb_CRC_hex, lsb_CRC_hex
+
