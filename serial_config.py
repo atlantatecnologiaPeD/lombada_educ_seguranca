@@ -7,6 +7,8 @@ CABECALHO = 0xAB
 COMANDO = 0x81
 ID_FAIXA = 0x10
 RODAPE = 0xCD
+BD_SENSOR = 115200
+BD_CONVERSOR_SERIAL = 9600
 
 #CRC configuração
 formato_CRC = crc_16("HEX")
@@ -40,10 +42,10 @@ else:
     print('O conversor USB/Serial foi encontrado na porta: ', portas_usb_encontradas[1])
 
 try:
-    ser_sensor = serial.Serial(portas_usb_encontradas[0], 115200, timeout=0)
+    ser_sensor = serial.Serial(portas_usb_encontradas[0], BD_SENSOR, timeout=0)
     ser_sensor.reset_input_buffer()
 
-    ser_conversor_display = serial.Serial(portas_usb_encontradas[1], 9600, timeout=0)
+    ser_conversor_display = serial.Serial(portas_usb_encontradas[1], BD_CONVERSOR_SERIAL, timeout=0)
     ser_conversor_display.reset_input_buffer()
 except Exception as e:
     print('Erro do tipo: ', e)
