@@ -15,6 +15,12 @@ from datetime import datetime
 from threading import Thread
 from binascii import hexlify
 
+global flag_habilita_envio_vel_display
+flag_habilita_envio_vel_display = 'True'
+
+def habilita_envio_vel_display(dado):
+    global flag_habilita_envio_vel_display
+    flag_habilita_envio_vel_display = dado
 
 
 #Chama a funçao send_vel com velocidade = 88km/h para saber quando o programa será iniciado de forma visual
@@ -25,6 +31,7 @@ time.sleep(2)
 #Thread de tratamento dos dados do sensor e envio de dados via socket para servidor da aplicação
 def sensor_data():
 #Declaração das variáveis utilizadas nessa função ou fora dela (global variables)
+    global flag_habilita_envio_vel_display
     id = 0
     velocidade_media = 0
     velocidades_objeto = []
@@ -144,8 +151,9 @@ def sensor_data():
                                 try:
                                     #Envio de dados para o display
                                     msb_CRC_hex, lsb_CRC_hex = display_protocolo(velocidade_media)
-                                    if flag_envia_display_velocidade:
+                                    if flag_envia_display_velocidade and flag_habilita_envio_vel_display == 'True':
                                         send_vel(velocidade_media, msb_CRC_hex, lsb_CRC_hex)
+                                        print("ESTOU ENVIANDO AO DISPLAY A VEL")
                                     #Envio dos dados do sensor via socket 
                                     #Pacote Json que indica saída de objeto na zona de detecção
                                     dados_json_entrada_saida =  {

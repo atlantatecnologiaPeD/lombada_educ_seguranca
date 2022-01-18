@@ -114,4 +114,10 @@ async def gettime():
     json_value  = dopplerSensor.getTime()
     return {"status": json_value}
 
-
+@app.get("/habilitaenvioveldisp/{dado}")
+async def habilita_envio_vel_disp(dado):
+    """
+    Habilita ou desabilita o envio de velocidade para o display de velocidade
+    """
+    habilita_envio_vel_display(dado)
+    return {"status": dado}
