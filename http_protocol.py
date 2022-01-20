@@ -121,3 +121,20 @@ async def habilita_envio_vel_disp(dado):
     """
     habilita_envio_vel_display(dado)
     return {"status": dado}
+
+@app.get("/requisitaestadodisplay")
+async def requisita_estado_disp():
+    """
+    Requisita estado dos dígitos do display
+    """
+    requisita_estado_digitos()
+    avalia_digitos = avalia_estado_digitos()
+    return {"status": avalia_digitos}
+
+@app.get("/velregulamentada/{dado}")
+async def vel_regulamentada(dado):
+    """
+    Envia velocidade regulamentada para o display
+    """
+    display_protocolo_envia_vel_reg(int(dado))
+    return {"status": 'Ok'}
