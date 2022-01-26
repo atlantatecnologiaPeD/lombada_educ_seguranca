@@ -28,6 +28,7 @@ def get_porta_sensor():
             porta_conversor_serial = p.device
     return str(porta_sensor_doppler), str(porta_conversor_serial)
 
+
 #Conexões seriais e suas confogurações 
 portas_usb_encontradas = get_porta_sensor()
 
@@ -55,6 +56,7 @@ except Exception as e:
 #Função de envio de dados para display de velocidade
 def send_vel(vel, crc16_alta, crc16_baixa):
     ser_conversor_display.write(serial.to_bytes([CABECALHO,COMANDO,ID_FAIXA,vel,crc16_alta, crc16_baixa,RODAPE])) 
+    
 
 #Função que cria o pacote de dados de velocidade para ser enviado ao display de velocidade
 def display_protocolo(velocidade_sensor):

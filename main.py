@@ -45,6 +45,9 @@ def sensor_data():
     global tipo_erro
     global codigo_erro
     global descricao_erro
+    global ser_sensor
+    global ser_conversor_display
+    global portas_usb_encontradas
     dados_json_entrada_saida ={
         "pacote":""
     }
@@ -108,13 +111,15 @@ def sensor_data():
                                 dados_json_entrada_saida = json.dumps(dados_json_entrada_saida) + "\n"
                                 try:
                                     clientSocket.send(dados_json_entrada_saida.encode('utf8'))
-                                    ######print("OBJETO DETECTADO")
+                                    print("OBJETO DETECTADO")
                                 except socket.error as e:
                                     tipo_erro = 'ERROR'
                                     codigo_erro = '1'
                                     descricao_erro = e
                                     flag_erro = True
-                                    print('ERRO AO ENVIAR DADOS VIA SOCKET: ', e)
+                                    #print('ERRO AO ENVIAR DADOS VIA SOCKET A ENTRADA DO OBJETO: ', e)
+                                    print('ERRO AO ENVIAR DADOS VIA SOCKET A ENTRADA DO OBJETO: ')
+                                    
 
                             elif dict_json['DetectedObject'] == 'Gone':
                                 objeto_detectado = False                
@@ -152,8 +157,8 @@ def sensor_data():
                                     #Envio de dados para o display
                                     msb_CRC_hex, lsb_CRC_hex = display_protocolo(velocidade_media)
                                     if flag_envia_display_velocidade and flag_habilita_envio_vel_display == 'True':
-                                        send_vel(velocidade_media, msb_CRC_hex, lsb_CRC_hex)
-                                        print("ESTOU ENVIANDO AO DISPLAY A VEL")
+                                        ser_conversor_display.write(serial.to_bytes([CABECALHO,COMANDO,ID_FAIXA,velocidade_media,msb_CRC_hex, lsb_CRC_hex,RODAPE])) 
+                                        #send_vel(velocidade_media, msb_CRC_hex, lsb_CRC_hex)
                                     #Envio dos dados do sensor via socket 
                                     #Pacote Json que indica saída de objeto na zona de detecção
                                     dados_json_entrada_saida =  {
@@ -176,7 +181,8 @@ def sensor_data():
                                     codigo_erro = '1'
                                     descricao_erro = e
                                     flag_erro = True
-                                    print('ERRO AO ENVIAR DADOS VIA SOCKET: ', e)
+                                    #print('ERRO AO ENVIAR DADOS VIA SOCKET DE SAÍDA DO OBJETO: ', e)
+                                    print('ERRO AO ENVIAR DADOS VIA SOCKET DE SAÍDA DO OBJETO: ')
 
                     except json.JSONDecodeError as e:
                         tipo_erro = 'ERROR'
@@ -193,7 +199,7 @@ def sensor_data():
             flag_erro = True
             print('SENSOR DESCONECTADO: ', e)
             time.sleep(1)
-
+        
         except OSError as e:
             tipo_erro = 'ERROR'
             codigo_erro = '4'
@@ -201,7 +207,8 @@ def sensor_data():
             flag_erro = True
             print("ERRO DE OS DO TIPO: ", e)
             time.sleep(1)
-        
+
+######## O ERRO ESTÁ POR AQUI @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         #Envio de erros via socket
         if flag_erro:    
             flag_erro = False
@@ -218,8 +225,15 @@ def sensor_data():
             try:
                 clientSocket.send(dados_json_error_socket.encode('utf8'))
             except:
-                print("LOGAR ERRO DE ENVIO VIA SOCKET IMPLEMENTAR LOG")
-
+                    
+                #ULTIMA INSERÇÂO NO CÒDIGO @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+                #clientSocket = socket.socket()
+                #print('parei aqui')
+                # VERIFICAR SE O CòDIGO TA PARANDO AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
+                # REALMENTE TEMMOS QUE POR ISSO EM UMA OUTRA THREAD !!!!!!!!!!!!!!!!!!!!!!!! TA PARANDO AQUIIIIIIIIIIIIIIIIIIIIIIII
+                #clientSocket.connect((HOST, PORT))
+                #print("LOGAR ERRO DE ENVIO VIA SOCKET IMPLEMENTAR LOG")
+                print('ERRO AO ENVIAR DADOS VIA SOCKET PACOTE DE ERRO:')
         
 #Start das threads        
 sensorThread = Thread(target=sensor_data)
@@ -227,9 +241,17 @@ sensorThread.daemon = True
 sensorThread.start()
 
 def main_code():
+    global flag_erro
+    flag_erro = False
+    global tipo_erro
+    global codigo_erro
+    global descricao_erro
+    global ser_sensor
+    global ser_conversor_display
+    global portas_usb_encontradas
     while True:
         time.sleep(2)
-        #Conexões seriais e suas confogurações 
+
         portas_usb_encontradas = get_porta_sensor()  
         try:
             ser_sensor = serial.Serial(portas_usb_encontradas[0], 115200, timeout=0)
@@ -254,28 +276,27 @@ def main_code():
             print('CONVERSOR DISPLAY DESCONECTADO', e)
             time.sleep(1)
             ser_conversor_display.close()   
-            
+           
         try:
-            # configure socket and connect to server
-            clientSocket = socket.socket()
-            ####print("Aguardando conexão com servidor socket")
+            clientSocket = socket.socket()        
             clientSocket.connect((HOST, PORT))
+            print("Conexão socket estabelecida")
             # keep track of connection status
-            connected = True
-            ####print("Conectado ao servidor socket")
+            flag_conexao_socket = True
         except:
             print('Erro de conexão socket tipo: ')
-            connected = False
+            flag_conexao_socket = False
             clientSocket = socket.socket()
             print("Conexão perdida...tentando reconectar")
-            pass        
-            while not connected:
+            #pass        
+            while not flag_conexao_socket:
                 # attempt to reconnect, otherwise sleep for 2 seconds
                 try:
                     clientSocket.connect((HOST, PORT))
-                    connected = True
+                    flag_conexao_socket = True
                     print("Reconexão estabelecida com sucesso")
                 except socket.error as e:
                     print('Erro de conexão socket tipo: ', e)
                     time.sleep(1)
 
+        
