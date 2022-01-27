@@ -1,61 +1,30 @@
-import socket  
-import time 
-import json
-from threading import Thread
-# configure socket and connect to server  
-clientSocket = socket.socket()  
+import socket
 host = '192.168.0.97'
-port = 3000  
-clientSocket.connect( ( host, port ) )  
-clientSocket.setblocking(0)	
-#clientSocket.setblocking(0)	  
-# keep track of connection status  
-connected = True  
-print( "connected to server" )  
 
-dados_json_entrada_saida =  {
-                            "pacote": "E1"
-                            }
-#Convertendo o Json em Str e add o paragrafo para ser enviado via socket pacote de entrada do objeto na zona de detecção                              
-dados_json_entrada_saida = json.dumps(dados_json_entrada_saida) + "\n"
+def server_program():
+    # get the hostname
+    #host = socket.gethostname()
+    print('host', host)
+    port = 3000  # initiate port no above 1024
 
+    server_socket = socket.socket()  # get instance
+    # look closely. The bind() function takes tuple as argument
+    server_socket.bind((host, port))  # bind host address and port together
 
+    # configure how many client the server can listen simultaneously
+    server_socket.listen(2)
+    conn, address = server_socket.accept()  # accept new connection
+    print("Connection from: " + str(address))
+    while True:
+        # receive data stream. it won't accept data packet greater than 1024 bytes
+        data = conn.recv(1024).decode()
+        if not data:
+            # if data is not received break
+            break
+        print("from connected user: " + str(data))
+        data = input(' -> ')
+        conn.send(data.encode())  # send data to the client
 
-def sensor_data():
-    while True:  
-    # attempt to send and receive wave, otherwise reconnect  
-        try:          
-            print("Não PAREI")
-            clientSocket.send(dados_json_entrada_saida.encode('utf8'))  
-            time.sleep(2)
-        except socket.error:
-            print("ERRO SOCKET")
+    conn.close()  # close the connection
 
-#Start das threads        
-sensorThread = Thread(target=sensor_data)
-sensorThread.daemon = True
-sensorThread.start()
-
-
-while True:  
-    time.sleep(2)
-    # attempt to send and receive wave, otherwise reconnect  
-    try:   
-        clientSocket.connect( ( host, port ) )        
-        print("SOCKET CONECTADO")
-    except socket.error as e:  
-        # set connection status and recreate socket  
-        connected = False  
-        clientSocket = socket.socket()  
-        print( "CONEXAO PERDIDA", e )  
-        while not connected:  
-            # attempt to reconnect, otherwise sleep for 2 seconds  
-            try:  
-                clientSocket.connect( ( host, port ) )  
-                connected = True  
-                print( "RECONEXAO ESTABELECIDA" )  
-            except:  
-                print('nao consegui conectar')
-                time.sleep( 2 )  
-  
- 
+server_program()

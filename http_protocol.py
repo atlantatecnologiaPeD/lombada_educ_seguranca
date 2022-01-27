@@ -113,7 +113,7 @@ async def gettime():
     """
     json_value  = dopplerSensor.getTime()
     return {"status": json_value}
-
+'''
 @app.get("/habilitaenvioveldisp/{dado}")
 async def habilita_envio_vel_disp(dado):
     """
@@ -138,3 +138,4 @@ async def vel_regulamentada(dado):
     """
     display_protocolo_envia_vel_reg(int(dado))
     return {"status": 'Ok'}
+'''

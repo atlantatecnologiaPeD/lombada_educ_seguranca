@@ -22,17 +22,24 @@ def habilita_envio_vel_display(dado):
     global flag_habilita_envio_vel_display
     flag_habilita_envio_vel_display = dado
 
-
+'''
 #Chama a funçao send_vel com velocidade = 88km/h para saber quando o programa será iniciado de forma visual
 send_vel(0x58,0x18,0x78)
 time.sleep(2)
+'''
 
 #Tratamento de Threads
 #Thread de tratamento dos dados do sensor e envio de dados via socket para servidor da aplicação
 def sensor_data():
 #Declaração das variáveis utilizadas nessa função ou fora dela (global variables)
     global flag_habilita_envio_vel_display
+    global id
     id = 0
+    global magnitude_velocidade_media
+    global velocidade_media
+    global magnitude_distancia_media
+    global distancia_media
+    global data_hora
     velocidade_media = 0
     velocidades_objeto = []
     magnitudes_velocidade = []
@@ -48,9 +55,11 @@ def sensor_data():
     global ser_sensor
     global ser_conversor_display
     global portas_usb_encontradas
+    global dados_json_entrada_saida
     dados_json_entrada_saida ={
         "pacote":""
     }
+    global dados_json_socket
     dados_json_socket = {
     "id": "", 
     "pacote": "",
@@ -60,6 +69,7 @@ def sensor_data():
     "magnitude_dist": "", 
     "dist_medida": ""
     }
+    global dados_json_error_socket
     dados_json_error_socket = {
         "pacote": "",
         "data/hora": "",
@@ -67,7 +77,16 @@ def sensor_data():
         "codigo":"",
         "descricao":""
     }
-    
+
+    global flag_envia_entrada_socket
+    flag_envia_entrada_socket = False
+    global flag_envia_saida_socket
+    flag_envia_saida_socket = False
+    global flag_envia_dados_medicao_socket
+    flag_envia_dados_medicao_socket = False
+    global flag_envia_erro_medicao_socket 
+    flag_envia_erro_medicao_socket = False
+
     while True:
         time.sleep(0.01)    
         try:
@@ -103,23 +122,10 @@ def sensor_data():
                                 magnitudes_velocidade.clear()
                                 distancias_objeto.clear()
                                 magnitudes_distancia.clear()
-                                #Pacote Json que indica entrada de objeto na zona de detecção
-                                dados_json_entrada_saida =  {
-                                                            "pacote": "E1"
-                                                            }
-                                #Convertendo o Json em Str e add o paragrafo para ser enviado via socket pacote de entrada do objeto na zona de detecção                              
-                                dados_json_entrada_saida = json.dumps(dados_json_entrada_saida) + "\n"
-                                try:
-                                    clientSocket.send(dados_json_entrada_saida.encode('utf8'))
-                                    print("OBJETO DETECTADO")
-                                except socket.error as e:
-                                    tipo_erro = 'ERROR'
-                                    codigo_erro = '1'
-                                    descricao_erro = e
-                                    flag_erro = True
-                                    #print('ERRO AO ENVIAR DADOS VIA SOCKET A ENTRADA DO OBJETO: ', e)
-                                    print('ERRO AO ENVIAR DADOS VIA SOCKET A ENTRADA DO OBJETO: ')
-                                    
+
+                                #Habilita flag de envio de entrada do objeto via socket
+                                flag_envia_entrada_socket = True
+
 
                             elif dict_json['DetectedObject'] == 'Gone':
                                 objeto_detectado = False                
@@ -136,39 +142,32 @@ def sensor_data():
                                     velocidade_media = int(np.around(np.mean(velocidades_objeto)))
                                     magnitude_velocidade_media = np.around(np.mean(magnitudes_velocidade))
 
-                                #Calculos de distancia e sua magnitude
+                                    #Calculos de distancia e sua magnitude
                                     distancia_media = np.around(np.mean(distancias_objeto))
                                     magnitude_distancia_media = np.around(np.mean(magnitudes_distancia))
 
-                                #Encapsulamento dos dados calculados em um Json
-                                dados_json_socket = {
-                                                    "id": str(id), 
-                                                    "pacote":"VV",
-                                                    "data_hora": str(data_hora.strftime("%d/%m/%Y %H:%M:%S.%f")[:-3]),
-                                                    "magnitude_vel": str(magnitude_velocidade_media), 
-                                                    "vel_medida": str(velocidade_media), 
-                                                    "magnitude_dist": str(magnitude_distancia_media), 
-                                                    "dist_medida": str(distancia_media)
-                                                    } 
-                                #Convertendo o Json em Str e add o paragrafo para ser enviado via socket                                   
-                                dados_json_socket = json.dumps(dados_json_socket) + "\n"
+                                    #Habilita flag de envio de saída do objeto via socket
+                                    flag_envia_saida_socket = True   
 
+                                    #Habilita flag de envio dos dados de detecção do objeto via socket
+                                    flag_envia_dados_medicao_socket = True
+
+                                '''
                                 try:
+                                    
                                     #Envio de dados para o display
                                     msb_CRC_hex, lsb_CRC_hex = display_protocolo(velocidade_media)
+                                    
                                     if flag_envia_display_velocidade and flag_habilita_envio_vel_display == 'True':
                                         ser_conversor_display.write(serial.to_bytes([CABECALHO,COMANDO,ID_FAIXA,velocidade_media,msb_CRC_hex, lsb_CRC_hex,RODAPE])) 
                                         #send_vel(velocidade_media, msb_CRC_hex, lsb_CRC_hex)
-                                    #Envio dos dados do sensor via socket 
-                                    #Pacote Json que indica saída de objeto na zona de detecção
-                                    dados_json_entrada_saida =  {
-                                                            "pacote": "S1"
-                                                                }
-                                    #Convertendo o Json em Str e add o paragrafo para ser enviado via socket pacote de saida do objeto na zona de detecção                              
-                                    dados_json_entrada_saida = json.dumps(dados_json_entrada_saida) + "\n"
-                                    clientSocket.send(dados_json_entrada_saida.encode('utf8'))   
-                                    #Envio dos dados calculados via socket                                    
-                                    clientSocket.send(dados_json_socket.encode('utf8'))
+                                    
+                                    #Habilita flag de envio de saída do objeto via socket
+                                    flag_envia_saida_socket = True   
+
+                                    #Habilita flag de envio dos dados de detecção do objeto via socket
+                                    flag_envia_dados_medicao_socket = True
+
                                 except serial.SerialException as e:
                                     tipo_erro = 'ERROR'
                                     codigo_erro = '0'
@@ -183,7 +182,8 @@ def sensor_data():
                                     flag_erro = True
                                     #print('ERRO AO ENVIAR DADOS VIA SOCKET DE SAÍDA DO OBJETO: ', e)
                                     print('ERRO AO ENVIAR DADOS VIA SOCKET DE SAÍDA DO OBJETO: ')
-
+                                '''
+                                
                     except json.JSONDecodeError as e:
                         tipo_erro = 'ERROR'
                         codigo_erro = '2'
@@ -208,7 +208,6 @@ def sensor_data():
             print("ERRO DE OS DO TIPO: ", e)
             time.sleep(1)
 
-######## O ERRO ESTÁ POR AQUI @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         #Envio de erros via socket
         if flag_erro:    
             flag_erro = False
@@ -219,26 +218,112 @@ def sensor_data():
                                         "codigo":codigo_erro,
                                         "descricao": str(descricao_erro)
                                         }
-            #Convertendo o Json em Str e add o paragrafo para ser enviado via socket                                    
-            dados_json_error_socket = json.dumps(dados_json_error_socket) + "\n"
-            ######print("ERRO A SER ENVIADO VIA SOCKET: ", dados_json_error_socket)
-            try:
-                clientSocket.send(dados_json_error_socket.encode('utf8'))
-            except:
-                    
-                #ULTIMA INSERÇÂO NO CÒDIGO @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-                #clientSocket = socket.socket()
-                #print('parei aqui')
-                # VERIFICAR SE O CòDIGO TA PARANDO AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
-                # REALMENTE TEMMOS QUE POR ISSO EM UMA OUTRA THREAD !!!!!!!!!!!!!!!!!!!!!!!! TA PARANDO AQUIIIIIIIIIIIIIIIIIIIIIIII
-                #clientSocket.connect((HOST, PORT))
-                #print("LOGAR ERRO DE ENVIO VIA SOCKET IMPLEMENTAR LOG")
-                print('ERRO AO ENVIAR DADOS VIA SOCKET PACOTE DE ERRO:')
+            
+            #Habilita flag de envio do erro de medicao via socket
+            flag_envia_erro_medicao_socket = True
         
-#Start das threads        
+#Start da thread       
 sensorThread = Thread(target=sensor_data)
 sensorThread.daemon = True
 sensorThread.start()
+
+
+def socket_envio_dados():
+
+    maquina_estado_dados = 0
+
+    global dados_json_entrada_saida
+    dados_json_entrada_saida = {
+        "pacote":""
+    }
+
+    global id
+    global magnitude_velocidade_media
+    global velocidade_media
+    global magnitude_distancia_media
+    global distancia_media
+    global data_hora
+
+    global flag_envia_entrada_socket            
+    global flag_envia_saida_socket
+    global flag_envia_dados_medicao_socket
+    global flag_envia_erro_medicao_socket
+    global dados_json_socket
+    global dados_json_error_socket
+    global clientSocket
+    global flag_erro_envio_dados_socket
+    flag_erro_envio_dados_socket = False
+
+    while(True):
+        time.sleep(0.01)
+        try:
+
+            if flag_erro_envio_dados_socket == False:
+
+                if flag_envia_entrada_socket:
+                    flag_envia_entrada_socket = False
+                    maquina_estado_dados = 0
+                    #Pacote Json que indica entrada de objeto na zona de detecção
+                    dados_json_entrada_saida =  {
+                                                    "pacote": "E1"
+                                                }
+                    #Convertendo o Json em Str e add o paragrafo para ser enviado via socket pacote de entrada do objeto na zona de detecção                              
+                    dados_json_entrada_saida = json.dumps(dados_json_entrada_saida) + "\n"
+                    #Envio dos dados de entrada via socket  
+                    clientSocket.send(dados_json_entrada_saida.encode('utf8'))
+                    maquina_estado_dados+=1
+                    
+                    
+
+                if flag_envia_saida_socket and maquina_estado_dados == 1:
+                    flag_envia_saida_socket = False
+                    #Pacote Json que indica saída de objeto na zona de detecção
+                    dados_json_entrada_saida =  {
+                                                    "pacote": "S1"
+                                                }
+                    #Convertendo o Json em Str e add o paragrafo para ser enviado via socket pacote de saida do objeto na zona de detecção                              
+                    dados_json_entrada_saida = json.dumps(dados_json_entrada_saida) + "\n"
+                    #Envio dos dados de saída via socket  
+                    clientSocket.send(dados_json_entrada_saida.encode('utf8'))
+                    maquina_estado_dados+=1 
+                    
+                    
+
+                if flag_envia_dados_medicao_socket and maquina_estado_dados == 2:
+                    flag_envia_dados_medicao_socket = False
+                    #Encapsulamento dos dados calculados em um Json
+                    dados_json_socket = {
+                                            "id": str(id), 
+                                            "pacote":"VV",
+                                            "data_hora": str(data_hora.strftime("%d/%m/%Y %H:%M:%S.%f")[:-3]),
+                                            "magnitude_vel": str(magnitude_velocidade_media), 
+                                            "vel_medida": str(velocidade_media), 
+                                            "magnitude_dist": str(magnitude_distancia_media), 
+                                            "dist_medida": str(distancia_media)
+                                        }
+                    #Convertendo o Json em Str e add o paragrafo para ser enviado via socket                                   
+                    dados_json_socket = json.dumps(dados_json_socket) + "\n"
+                    #Envio dos dados calculados via socket                                    
+                    clientSocket.send(dados_json_socket.encode('utf8'))
+                    maquina_estado_dados = 0
+                    
+
+                if flag_envia_erro_medicao_socket:
+                    flag_envia_erro_medicao_socket = False
+                    #Convertendo o Json em Str e add o paragrafo para ser enviado via socket                                    
+                    dados_json_error_socket = json.dumps(dados_json_error_socket) + "\n"
+                    #Envio dos dados via socket  
+                    clientSocket.send(dados_json_error_socket.encode('utf8'))
+
+        except socket.error as e:
+            flag_erro_envio_dados_socket = True
+            print('ERRO AO ENVIAR DADOS VIA SOCKET DO TIPO: ', e)
+            time.sleep(2)
+
+#Start da thread   
+socket_thread = Thread(target=socket_envio_dados)
+socket_thread.daemon = True
+socket_thread.start()
 
 def main_code():
     global flag_erro
@@ -249,9 +334,14 @@ def main_code():
     global ser_sensor
     global ser_conversor_display
     global portas_usb_encontradas
+    
+    global clientSocket
+
+    global flag_erro_envio_dados_socket
+    flag_erro_envio_dados_socket = False
+
     while True:
         time.sleep(2)
-
         portas_usb_encontradas = get_porta_sensor()  
         try:
             ser_sensor = serial.Serial(portas_usb_encontradas[0], 115200, timeout=0)
@@ -264,7 +354,7 @@ def main_code():
             print('SENSOR DESCONECTADO', e)
             time.sleep(1)
             ser_sensor.close()    
-
+        '''
         try:
             ser_conversor_display = serial.Serial(portas_usb_encontradas[1], 9600, timeout=0)
         except serial.SerialException as e:
@@ -276,27 +366,32 @@ def main_code():
             print('CONVERSOR DISPLAY DESCONECTADO', e)
             time.sleep(1)
             ser_conversor_display.close()   
-           
-        try:
-            clientSocket = socket.socket()        
-            clientSocket.connect((HOST, PORT))
-            print("Conexão socket estabelecida")
-            # keep track of connection status
-            flag_conexao_socket = True
-        except:
-            print('Erro de conexão socket tipo: ')
-            flag_conexao_socket = False
-            clientSocket = socket.socket()
-            print("Conexão perdida...tentando reconectar")
-            #pass        
-            while not flag_conexao_socket:
-                # attempt to reconnect, otherwise sleep for 2 seconds
-                try:
-                    clientSocket.connect((HOST, PORT))
-                    flag_conexao_socket = True
-                    print("Reconexão estabelecida com sucesso")
-                except socket.error as e:
-                    print('Erro de conexão socket tipo: ', e)
-                    time.sleep(1)
+        '''
+
+        if flag_erro_envio_dados_socket:        
+
+            try:
+                clientSocket = socket.socket()        
+                clientSocket.connect((HOST, PORT))
+                print("Conexão socket estabelecida")
+                # keep track of connection status
+                flag_conexao_socket = True
+                flag_erro_envio_dados_socket = False
+            except:
+                print('Erro de conexão socket tipo: ')
+                flag_conexao_socket = False
+                clientSocket = socket.socket()
+                print("Conexão perdida...tentando reconectar")
+                #pass        
+                while not flag_conexao_socket:
+                    # attempt to reconnect, otherwise sleep for 2 seconds
+                    try:
+                        clientSocket.connect((HOST, PORT))
+                        flag_conexao_socket = True
+                        flag_erro_envio_dados_socket = False
+                        print("Reconexão estabelecida com sucesso")
+                    except socket.error as e:
+                        print('Erro de conexão socket tipo: ', e)
+                        time.sleep(1)
 
         

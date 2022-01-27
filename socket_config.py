@@ -5,6 +5,7 @@ HOST = '192.168.0.97'
 PORT = 3000
 #Instanciando os métodos da comunicação socket
 clientSocket = socket.socket()
+#clientSocket.setblocking(False)
 #Conectando no servidor
 try:
     print('Aguardando conexão com servidor')
